@@ -220,7 +220,6 @@ function addResult(studentId, examId, answers, score, grade, passed, feedback) {
 
 
 //Backend
-
 function seedDatabase(){
 
     if (getUsers().length > 0) return;
@@ -261,32 +260,116 @@ function seedDatabase(){
         teacher.id
     );
 
-    /* Questions - 20 total, generated in a loop */
-    const questions = [];
-    for (let i = 1; i <= 20; i++) {
-        questions.push(addQuestion(
-            exam.id,
-            "mcq",
-            `Sample Question ${i}: What is the correct option?`,
-            [{ o1: "Option A" }, { o2: "Option B" }, { o3: "Option C" }, { o4: "Option D" }],
-            "o1",
-            5,
-            i
-        ));
+    function buildOptions(texts) {
+        return texts.map(function (text, idx) {
+            const key = "o" + (idx + 1);
+            const obj = {};
+            obj[key] = text;
+            return obj;
+        });
     }
 
-    /* Results - only the first 10 students (half) have submitted */
+    const questions = [];
+
+    /* 5 Multiple Choice */
+    const mcqData = [
+        { text: "What is the basic unit of life?", options: ["Atom", "Cell", "Molecule", "Tissue"], correct: 1 },
+        { text: "Which organelle is known as the powerhouse of the cell?", options: ["Nucleus", "Ribosome", "Mitochondria", "Golgi apparatus"], correct: 2 },
+        { text: "DNA stands for:", options: ["Deoxyribonucleic acid", "Dioxyribose nucleic acid", "Deoxyribose nuclear acid", "Dual nucleic acid"], correct: 0 },
+        { text: "What are the building blocks of proteins?", options: ["Nucleotides", "Amino acids", "Fatty acids", "Monosaccharides"], correct: 1 },
+        { text: "What is the primary energy currency of the cell?", options: ["Glucose", "ATP", "NADH", "Protein"], correct: 1 }
+    ];
+    mcqData.forEach(function (q, i) {
+        const opts = buildOptions(q.options);
+        const correctKey = "o" + (q.correct + 1);
+        questions.push(addQuestion(exam.id, "mcq", q.text, opts, correctKey, 5, i + 1));
+    });
+
+    /* 5 True/False */
+    const tfData = [
+        { text: "The mitochondria is the powerhouse of the cell.", correct: true },
+        { text: "DNA replication occurs during the S phase of the cell cycle.", correct: true },
+        { text: "Ribosomes are only found in eukaryotic cells.", correct: false },
+        { text: "RNA contains uracil instead of thymine.", correct: true },
+        { text: "Animal cells have a cell wall.", correct: false }
+    ];
+    tfData.forEach(function (q, i) {
+        questions.push(addQuestion(exam.id, "trueFalse", q.text, [], q.correct, 5, i + 6));
+    });
+
+    /* 5 Multiple Answers (select all that apply) */
+    const maData = [
+        { text: "Which of the following are nitrogenous bases found in DNA? (Select all that apply)", options: ["Adenine", "Uracil", "Thymine", "Guanine"], correctIndexes: [0, 2, 3] },
+        { text: "Which of the following are organelles found in a eukaryotic cell? (Select all that apply)", options: ["Nucleus", "Mitochondria", "Ribosome", "Cell Wall"], correctIndexes: [0, 1, 2] },
+        { text: "Which of these processes occur during protein synthesis? (Select all that apply)", options: ["Transcription", "Translation", "Replication", "Splicing"], correctIndexes: [0, 1, 3] },
+        { text: "Which of these are types of RNA? (Select all that apply)", options: ["mRNA", "tRNA", "rRNA", "gDNA"], correctIndexes: [0, 1, 2] },
+        { text: "Which of these are functions of the cell membrane? (Select all that apply)", options: ["Selective permeability", "Protein synthesis", "Cell communication", "DNA replication"], correctIndexes: [0, 2] }
+    ];
+    maData.forEach(function (q, i) {
+        const opts = buildOptions(q.options);
+        const correctKeys = q.correctIndexes.map(function (idx) { return "o" + (idx + 1); });
+        questions.push(addQuestion(exam.id, "multiAnswer", q.text, opts, correctKeys, 5, i + 11));
+    });
+
+    /* 5 Short Answer (numeric only) */
+    const saData = [
+        { text: "How many chromosomes are in a normal human somatic cell?", correct: 46 },
+        { text: "How many chambers does the human heart have?", correct: 4 },
+        { text: "How many nucleotide bases make up a single DNA codon?", correct: 3 },
+        { text: "How many strands make up a DNA double helix?", correct: 2 },
+        { text: "How many amino acids are commonly found in human proteins?", correct: 20 }
+    ];
+    saData.forEach(function (q, i) {
+        questions.push(addQuestion(exam.id, "shortAnswer", q.text, [], q.correct, 5, i + 16));
+    });
+
+    // Builds a genuinely wrong answer in the right shape for each question type
+    function wrongAnswerFor(question) {
+        if (question.type === "mcq") {
+            const correctIndex = Number(question.correctAnswer.slice(1)) - 1;
+            const wrongIndex = (correctIndex + 1) % question.options.length;
+            return "o" + (wrongIndex + 1);
+        }
+        if (question.type === "trueFalse") {
+            return !question.correctAnswer;
+        }
+        if (question.type === "multiAnswer") {
+            // drop one correct option and add one wrong one - a believable near-miss
+            const correct = question.correctAnswer;
+            const allKeys = question.options.map(function (o) { return Object.keys(o)[0]; });
+            const wrongKey = allKeys.find(function (k) { return !correct.includes(k); });
+            const partial = correct.slice(0, -1);
+            return wrongKey ? partial.concat([wrongKey]) : partial;
+        }
+        // shortAnswer
+        return question.correctAnswer + 1;
+    }
+
+    /* Results - only the first 10 students (half) have submitted, with a
+       genuinely varied number of wrong answers per student so scores spread
+       across a believable range, not one uniform formula. */
+    const wrongCountPerStudent = [0, 1, 2, 3, 4, 5, 7, 9, 11, 14];
+
     for (let i = 0; i < 10; i++) {
-        const answers = questions.map((q, idx) => ({
-            questionId: q.id,
-            studentAnswer: idx % 3 === 0 ? "o2" : "o1" // mostly correct, a few wrong for variety
-        }));
+        const wrongCount = wrongCountPerStudent[i];
 
-        const correctCount = answers.filter((a, idx) => a.studentAnswer === questions[idx].correctAnswer).length;
+        const wrongIndexes = new Set();
+        for (let w = 0; w < wrongCount; w++) {
+            wrongIndexes.add((w * 3 + i) % questions.length);
+        }
+
+        const answers = questions.map(function (q, idx) {
+            if (wrongIndexes.has(idx)) {
+                return { questionId: q.id, studentAnswer: wrongAnswerFor(q) };
+            }
+            return { questionId: q.id, studentAnswer: q.correctAnswer };
+        });
+
+        const correctCount = questions.length - wrongIndexes.size;
         const score = Math.round((correctCount / questions.length) * 100);
-        const grade = score >= 90 ? "A" : score >= 80 ? "B" : score >= 70 ? "C" : score >= 60 ? "D" : "F";
+        const grade = gradeCalc(score);
 
-        addResult(students[i].id, exam.id, answers, score, grade, score >= 60, "");
+        addResult(students[i].id, exam.id, answers, score, grade, score >= 50, "");
     }
 }
 seedDatabase()
