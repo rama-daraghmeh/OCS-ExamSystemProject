@@ -63,7 +63,7 @@ function card(container1 , title,dateTime , status , id){
     
     btn.className="btn--secondary"
     btn.innerHTML="View Results"
-    btn.href="results.html"
+    btn.href = `results.html?examId=${id}`
     titled.className="exam-card__title"
     titled.innerHTML=`${title}`
     close_container.className="exam-card__closing"
