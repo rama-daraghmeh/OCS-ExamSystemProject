@@ -361,7 +361,7 @@ function gradeTier(grade){
     const letter = grade[0]
     if (letter === 'A') return 'high'
     if (letter === 'B' || letter === 'C') return 'mid'
-    return 'low' // D, F
+    return 'low'
 }
 
 function gradeCalc(score){

@@ -13,6 +13,7 @@
   flex-direction: column;
   min-height: 100vh;
   padding: var(--spacing-lg) var(--spacing-md);
+  width: 100%;
 }
 
 .sidebar-logo {
@@ -162,6 +163,67 @@
   }
 }
 
+/* ================= Teacher Sidebar ================= */
+
+.teacher-sidebar {
+  background: var(--color-primary-dark);
+  color: var(--color-text-inverse);
+}
+
+.teacher-sidebar .sidebar-logo {
+  color: var(--color-text-inverse);
+}
+
+.teacher-sidebar .logo-icon {
+  background: var(--color-background);
+  color: var(--color-primary-dark);
+}
+
+.teacher-sidebar .sidebar-nav {
+  margin-top: var(--spacing-lg);
+}
+
+.teacher-sidebar .sidebar-link {
+  color: rgba(255, 255, 255, 0.9);
+  padding: 14px 18px;
+  border-radius: var(--radius-full);
+  transition: 0.25s;
+  font-weight: var(--font-weight-normal);
+}
+
+.teacher-sidebar .sidebar-link i {
+  font-size: var(--font-size-lg);
+}
+
+.teacher-sidebar .sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--color-text-inverse);
+}
+
+.teacher-sidebar .sidebar-link.active {
+  background: var(--color-background);
+  color: var(--color-success-text);
+  box-shadow: var(--shadow-lg);
+}
+
+.teacher-sidebar .sidebar-link.active i {
+  color: var(--color-success-text);
+}
+
+.teacher-sidebar .sidebar-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: var(--spacing-lg);
+}
+
+.teacher-sidebar .logout-link {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.teacher-sidebar .logout-link:hover {
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+}
+
 /* Navbar */
 header {
   background: var(--color-background-input);
@@ -170,7 +232,7 @@ header {
   z-index: 1000;
 }
 
-.logo  {
+.logo {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
